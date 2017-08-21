@@ -73,10 +73,14 @@ KinovaArm::KinovaArm(KinovaComm &arm, const ros::NodeHandle &nodeHandle, const s
             ROS_ERROR_STREAM("Name and serial must be specifed for each robot");
             continue;
           }
-
+          
+          ROS_INFO("Connecting arm with Type, ours: %s.", kinova_robotType_.c_str());
           robots_[i].name = std::string(robot_list[i]["name"]);
-          robots_[i].name = std::string(robot_list[i]["type"]);
-          robots_[i].name = std::string(robot_list[i]["serial"]);
+          //robots_[i].name = std::string(robot_list[i]["type"]);
+          //robots_[i].name = std::string(robot_list[i]["serial"]);
+          robots_[i].type = std::string(robot_list[i]["type"]);
+          robots_[i].serial = std::string(robot_list[i]["serial"]);
+     
         }
     }
 

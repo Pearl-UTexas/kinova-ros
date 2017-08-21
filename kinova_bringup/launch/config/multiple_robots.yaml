@@ -1,8 +1,8 @@
 kinova_number_of_robots: 2
 kinova_robots:
+  - serial: PJ00900006152990001 
+    type: j2s7s300
+    name: left_arm
   - serial: PJ00900006153340003
     type: j2s7s300
     name: right_arm
-  - serial: PJ00900006152990001
-    type: j2s7s300
-    name: left_arm

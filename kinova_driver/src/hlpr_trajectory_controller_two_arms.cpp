@@ -23,27 +23,6 @@ JacoTrajectoryController::JacoTrajectoryController() : pnh("~"),
   {
     ROS_INFO("Using real robot arm.");
 
-	//Setting up the device id for two arms///////
-/*
-    KinovaDevice * devinfo = new KinovaDevice[20];
-    int res;
-    int num_arms = GetDevices(devinfo, res);
-    ROS_INFO("Number of Arms connected = %d", num_arms);
-
-    if(side_ == "right")
-    {
-      ROS_WARN("Make Sure the Arm serial numbers match");
-      ROS_INFO("Intializing Right Arm with Serial Number = %s", std::string(devinfo[1].SerialNumber).c_str());
-      int result = SetActiveDevice(devinfo[1]);
-    }
-    else 
-    {
-      ROS_INFO("Intializing Left arm with Serial Number = %s", std::string(devinfo[0].SerialNumber).c_str());
-      int result = SetActiveDevice(devinfo[0]);
-    }
-
-    delete devinfo; */
-
     // Connect to the low-level angular driver from kinova-ros
     angularCmdPublisher = n.advertise<kinova_msgs::JointVelocity>(side_+"_arm_driver/in/joint_velocity", 1);
 
@@ -87,11 +66,11 @@ JacoTrajectoryController::JacoTrajectoryController() : pnh("~"),
 	}
 	
 	// Subscribes to the joint states of the robot
-	//jointStatesSubscriber = n.subscribe("/vector/" + side_ +"_arm/state", 1, &JacoTrajectoryController::jointStateCallback, this);
-	jointStatesSubscriber = n.subscribe("joint_states", 1, &JacoTrajectoryController::jointStateCallback, this);
+	jointStatesSubscriber = n.subscribe("/vector/" + side_ +"_arm/joint_states", 1, &JacoTrajectoryController::jointStateCallback, this);
+	//jointStatesSubscriber = n.subscribe("joint_states", 1, &JacoTrajectoryController::jointStateCallback, this);
 
-  // Start the trajectory server
-  smoothTrajectoryServer.start();
+    // Start the trajectory server
+    smoothTrajectoryServer.start();
 }
 
 /** Fake Gravity Comp Services for Simulation **/

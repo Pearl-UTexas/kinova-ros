@@ -5,10 +5,11 @@
   <arg name="kinova_robotType" default="j2n6s300" />
   <arg name="kinova_robotName" default="$(arg kinova_robotType)"/>
   <arg name="kinova_robotSerial" default="not_set" />
-<!--  <arg name="side" default="right" /> -->
+  <arg name="side" default="right" />
+  <arg name="right_arm" default="true" />
 
   <!-- If the node handles multiple robots uncomment this and configure /config/multiple_robots.yaml" -->
-  <rosparam file="$(find kinova_bringup)/launch/config/multiple_robots.yaml" command="load" />
+  <!--rosparam file="$(find kinova_bringup)/launch/config/multiple_robots.yaml" command="load" /-->
 
   <node name="$(arg kinova_robotName)_driver" pkg="kinova_driver" type="kinova_arm_driver" output="screen" cwd="node" args="$(arg kinova_robotType)">
     <rosparam file="$(find kinova_bringup)/launch/config/robot_parameters.yaml" command="load" />
@@ -31,7 +32,7 @@
     </node>
   </group>
   -->
-<!--
+
   <group if="$(arg use_urdf)">
 	<param name="robot_description" command="$(find xacro)/xacro.py '$(find kinova_description)/urdf/$(arg kinova_robotType)_standalone.xacro'" />
     <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
@@ -48,45 +49,5 @@
       <remap from="joint_states" to="/$(arg kinova_robotName)_driver/out/joint_state"/>
     </node>
   </group>
--->
-
- <group if="$(arg use_urdf)">
-	<param name="robot_description" command="$(find xacro)/xacro.py '$(find vector_description)/urdf/manipulation/jaco/$(arg kinova_robotType).xacro'" />
-
-    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
-      <param name="publish_frequency" type="double" value="100" />
-    </node>
-	<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
-      <param name="use_gui" value="false" />
-	  <rosparam param="source_list">[right_arm_driver/out/joint_state, left_arm_driver/out/joint_state, vector/right_gripper/joint_states,vector/left_gripper/joint_states, vector/joint_states]</rosparam>
-    </node>
-	
-	<node name="$(arg kinova_robotName)_state_publisher"
-           pkg="robot_state_publisher"
-          type="robot_state_publisher">
-      <remap from="joint_states" to="/$(arg kinova_robotName)_driver/out/joint_state"/>
-    </node>
-
-	<!--
-	<group unless="$(arg side left)"> --> <!--Right_arm -->
-	<!--	
-		<node name="$(arg side)_arm_state_publisher"
-		       pkg="robot_state_publisher"
-		      type="robot_state_publisher">
-		  <remap from="vector/right_arm/joint_states" to="/right_arm_driver/out/joint_state"/>
-		</node>
-	</group>
-
-	<group if="$(arg side left)"> --> <!--Left_arm -->
-	<!--
-		<node name="$(arg side)_arm_state_publisher"
-		       pkg="robot_state_publisher"
-		      type="robot_state_publisher">
-		  <remap from="vector/left_arm/joint_states" to="/left_arm_driver/out/joint_state"/>
-		</node>
-	</group>
-	-->
-  </group>
-
 
 </launch>
