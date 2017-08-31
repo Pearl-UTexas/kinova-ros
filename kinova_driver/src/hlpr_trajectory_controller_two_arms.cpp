@@ -5,7 +5,7 @@ using namespace std;
 JacoTrajectoryController::JacoTrajectoryController() : pnh("~"),
   smoothTrajectoryServer(pnh, "trajectory", boost::bind(&JacoTrajectoryController::executeSmoothTrajectory, this, _1), false)
 {
-  pnh.param("max_curvature", maxCurvature, 100.0);
+  pnh.param("max_curvature", maxCurvature, 200.0);
   pnh.param<string>("side", side_, "right");
   pnh.param("sim", sim_flag_, false);
 
@@ -66,8 +66,8 @@ JacoTrajectoryController::JacoTrajectoryController() : pnh("~"),
 	}
 	
 	// Subscribes to the joint states of the robot
-	jointStatesSubscriber = n.subscribe("/vector/" + side_ +"_arm/joint_states", 1, &JacoTrajectoryController::jointStateCallback, this);
-	//jointStatesSubscriber = n.subscribe("joint_states", 1, &JacoTrajectoryController::jointStateCallback, this);
+	//jointStatesSubscriber = n.subscribe("/vector/" + side_ +"_arm/joint_states", 1, &JacoTrajectoryController::jointStateCallback, this);
+	jointStatesSubscriber = n.subscribe("joint_states", 1, &JacoTrajectoryController::jointStateCallback, this);
 
     // Start the trajectory server
     smoothTrajectoryServer.start();
@@ -240,11 +240,37 @@ void JacoTrajectoryController::executeSmoothTrajectory(const control_msgs::Follo
 
   vector<ecl::SmoothLinearSpline> splines;
   splines.resize(NUM_JACO_JOINTS);
+
+/* Modifications to catch error in max bound error
   for (unsigned int i = 0; i < NUM_JACO_JOINTS; i++)
   {
     ecl::SmoothLinearSpline tempSpline(timePoints, jointPoints[i], maxCurvature);
     splines.at(i) = tempSpline;
   }
+*/
+  try{
+   for (unsigned int i = 0; i < NUM_JACO_JOINTS; i++)
+	  {
+		ecl::SmoothLinearSpline tempSpline(timePoints, jointPoints[i], maxCurvature);
+		splines.at(i) = tempSpline;
+	  }
+
+	} 
+	catch ( std::exception &exc ){ // catch ALL exceptions
+      //std::cout << "Data: " << e.data() << std::endl;
+      //cout << e.what() << endl;
+      std::cerr << exc.what();
+      control_msgs::FollowJointTrajectoryResult result;
+      result.error_code = control_msgs::FollowJointTrajectoryResult::PATH_TOLERANCE_VIOLATED;
+      smoothTrajectoryServer.setAborted(result);
+      ROS_ERROR("Trajectory could not be generated. Aborting trajectory action.");
+
+      //not_safe_for_gc_ = false; // Can go into kinesthetic mode again
+	  return;
+	}
+
+// Modification ends
+
 
   //control loop
   bool trajectoryComplete = false;
