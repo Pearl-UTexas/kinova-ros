@@ -26,6 +26,7 @@
    arm_half2 (7dof)		7
    wrist_spherical_1  8
    wrist_spherical_2  9
+   wrist_3  			11
 
    hand 3 finger  		55
    hand_2finger   		56
@@ -145,6 +146,18 @@
         <mass value="0.463" />
         <origin xyz="0 0.0497208855 -0.0028562765" />
         <xacro:inertia_cylinder height="0.1"  radius = "0.02" mass="0.463" axis="1"/>  
+    </inertial>  
+  </xacro:unless>  
+
+<!--   wrist_3  11 -->   
+  <xacro:unless value="${mesh_no-11}">
+    <inertial>
+        <mass value="0.363290" />
+        <!--xacro:inertia_cylinder height="0.1"  radius = "0.02" mass="0.463" axis="1"/-->  
+		<origin xyz="0 0 0" />
+        <inertia  ixx="0.000924"  ixy="0.000000"  ixz="-0.000294" 
+                  iyx="0.000000"  iyy="0.001034"  iyz="0.000000" 
+                  izx="-0.000294"  izy="0.000000"  izz="0.000312" />
     </inertial>  
   </xacro:unless>  
 
