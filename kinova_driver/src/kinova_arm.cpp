@@ -689,7 +689,6 @@ void KinovaArm::publishJointAngles(void)
     joint_angles_publisher_.publish(kinova_angles);
     joint_command_publisher_.publish(joint_command_msg);
     joint_state_publisher_.publish(joint_state);
-
 }
 
 /*!

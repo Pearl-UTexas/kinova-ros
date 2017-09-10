@@ -15,6 +15,7 @@ find_package(catkin REQUIRED dynamic_reconfigure COMPONENTS
   visualization_msgs
   ecl_geometry
   cmake_modules
+  jaco_sdk
 )
 
 find_package(Eigen REQUIRED)
