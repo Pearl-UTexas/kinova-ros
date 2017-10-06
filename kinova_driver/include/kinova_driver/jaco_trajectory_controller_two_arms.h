@@ -69,6 +69,7 @@ private:
   // Parameters
   double maxCurvature;
   bool   sim_flag_;
+  bool   use_time_flag_;
   std::string	side_;
 
   sensor_msgs::JointState jointStates;

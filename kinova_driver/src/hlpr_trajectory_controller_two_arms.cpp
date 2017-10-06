@@ -8,6 +8,7 @@ JacoTrajectoryController::JacoTrajectoryController() : pnh("~"),
   pnh.param("max_curvature", maxCurvature, 200.0);
   pnh.param<string>("side", side_, "right");
   pnh.param("sim", sim_flag_, false);
+  pnh.param("use_time", use_time_flag_, false);
 
   jointNames.clear();
   jointNames.push_back(side_ + "_joint_1");
@@ -216,27 +217,37 @@ void JacoTrajectoryController::executeSmoothTrajectory(const control_msgs::Follo
   }
 
   //determine time component of trajectories for each joint
-  for (unsigned int i = 1; i < numPoints; i++)
-  {
-    float maxTime = 0.0;
-    for (unsigned int j = 0; j < NUM_JACO_JOINTS; j++)
-    {
-      //calculate approximate time required to move to the next position
-      float time = fabs(trajectoryPoints[j][i] - prevPoint[j]);
-      if (j <= 3)
-        time /= LARGE_ACTUATOR_VELOCITY;
-      else
-        time /= SMALL_ACTUATOR_VELOCITY;
+	if (use_time_flag_)
+	{
+		for (unsigned int i = 1; i < numPoints; i++)
+		{
+			timePoints[i] = goal->trajectory.points.at(i).time_from_start.toSec();
+		}
+	}
+	else
+	{
+		for (unsigned int i = 1; i < numPoints; i++)
+		{
+		  float maxTime = 0.0;
+		  for (unsigned int j = 0; j < NUM_JACO_JOINTS; j++)
+		  {
+		    //calculate approximate time required to move to the next position
+		    float time = fabs(trajectoryPoints[j][i] - prevPoint[j]);
+		    if (j <= 3)
+		      time /= LARGE_ACTUATOR_VELOCITY;
+		    else
+		      time /= SMALL_ACTUATOR_VELOCITY;
 
-      if (time > maxTime)
-        maxTime = time;
+		    if (time > maxTime)
+		      maxTime = time;
 
-      jointPoints[j][i] = trajectoryPoints[j][i];
-      prevPoint[j] = trajectoryPoints[j][i];
-    }
+		    jointPoints[j][i] = trajectoryPoints[j][i];
+		    prevPoint[j] = trajectoryPoints[j][i];
+		  }
 
-    timePoints[i] = timePoints[i - 1] + maxTime * TIME_SCALING_FACTOR;
-  }
+		  timePoints[i] = timePoints[i - 1] + maxTime * TIME_SCALING_FACTOR;
+		}
+	}
 
   vector<ecl::SmoothLinearSpline> splines;
   splines.resize(NUM_JACO_JOINTS);
@@ -397,7 +408,9 @@ void JacoTrajectoryController::executeSmoothTrajectory(const control_msgs::Follo
           totalError += fabs(error[i]);
         }
 
+
         if (totalError < .035 || ros::Time::now() - finalPointTime >= ros::Duration(3.0))
+
         {
           //stop arm
           trajectoryPoint.joint1 = 0.0;
