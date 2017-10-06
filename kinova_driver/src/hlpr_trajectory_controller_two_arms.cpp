@@ -58,6 +58,9 @@ JacoTrajectoryController::JacoTrajectoryController() : pnh("~"),
 	stop_gravity_comp_ = n.advertiseService(
             side_ + "_arm_driver/in/stop_gravity_comp", &JacoTrajectoryController::stopGravityCompService, this);
 	
+  // Setup use time service
+  use_time_service_ = n.advertiseService("use_custom_time", &JacoTrajectoryController::useTimeService, this);
+
 	// Setup a fake admittance service (Force control)
 	start_force_control_service_ = n.advertiseService(side_ + "_arm_driver/in/start_force_control", &JacoTrajectoryController::startForceControlCallback, this);
 	stop_force_control_service_ = n.advertiseService(side_ + "_arm_driver/in/stop_force_control", &JacoTrajectoryController::stopForceControlCallback, this);
@@ -89,6 +92,13 @@ bool JacoTrajectoryController::stopGravityCompService(kinova_msgs::Stop::Request
 {
     ROS_INFO("Simulation 'disabled' grav comp. Note: nothing actually happens");
     res.stop_result = "Stop gravity compensation requested.";
+    return true;
+}
+
+bool JacoTrajectoryController::useTimeService(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
+{
+    ROS_INFO("Toggling use time");
+    use_time_flag_ = req.data;
     return true;
 }
 

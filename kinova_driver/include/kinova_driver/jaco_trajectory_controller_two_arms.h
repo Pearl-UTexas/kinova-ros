@@ -8,6 +8,7 @@
 #include <boost/thread/recursive_mutex.hpp>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <ecl/geometry.hpp>
+#include <std_srvs/SetBool.h>
 #include <kinova_msgs/Stop.h>
 #include <kinova_msgs/Start.h>
 #include <kinova_msgs/JointVelocity.h>
@@ -37,6 +38,9 @@ public:
   bool stopGravityCompService(kinova_msgs::Stop::Request &req,
                                   kinova_msgs::Stop::Response &res);
 
+  bool useTimeService(std_srvs::SetBool::Request &req,
+                        std_srvs::SetBool::Response &res);
+
   bool startForceControlCallback(kinova_msgs::Start::Request &req,
                                    kinova_msgs::Start::Response &res);
   bool stopForceControlCallback(kinova_msgs::Stop::Request &req,
@@ -63,6 +67,7 @@ private:
   ros::ServiceServer stop_gravity_comp_;
   ros::ServiceServer start_force_control_service_;
   ros::ServiceServer stop_force_control_service_;
+  ros::ServiceServer use_time_service_;
 
   boost::recursive_mutex executionMutex;
 
