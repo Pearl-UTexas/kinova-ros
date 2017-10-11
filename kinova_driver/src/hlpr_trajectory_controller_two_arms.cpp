@@ -57,9 +57,6 @@ JacoTrajectoryController::JacoTrajectoryController() : pnh("~"),
             side_ + "_arm_driver/in/start_gravity_comp", &JacoTrajectoryController::startGravityCompService, this);
 	stop_gravity_comp_ = n.advertiseService(
             side_ + "_arm_driver/in/stop_gravity_comp", &JacoTrajectoryController::stopGravityCompService, this);
-	
-  // Setup use time service
-  use_time_service_ = n.advertiseService("use_custom_time", &JacoTrajectoryController::useTimeService, this);
 
 	// Setup a fake admittance service (Force control)
 	start_force_control_service_ = n.advertiseService(side_ + "_arm_driver/in/start_force_control", &JacoTrajectoryController::startForceControlCallback, this);
@@ -67,7 +64,10 @@ JacoTrajectoryController::JacoTrajectoryController() : pnh("~"),
 
 	// Connect to the gazebo low-level ros controller
 	angCmdSimPublisher = n.advertise<trajectory_msgs::JointTrajectory>("/vector/" + side_ +"_arm/command", 1);
-	}
+  }
+	
+	// Setup use time service
+    use_time_service_ = n.advertiseService(side_ + "_arm_driver/use_custom_time", &JacoTrajectoryController::useTimeService, this);
 	
 	// Subscribes to the joint states of the robot
 	//jointStatesSubscriber = n.subscribe("/vector/" + side_ +"_arm/joint_states", 1, &JacoTrajectoryController::jointStateCallback, this);
