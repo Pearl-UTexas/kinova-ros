@@ -1,4 +1,4 @@
-#include <hlpr_cartesian_trajectory_controller_two_arms.h>
+#include <kinova_driver/hlpr_cartesian_trajectory_controller_two_arms.h>
 
 using namespace std;
 
@@ -23,11 +23,10 @@ JacoCartesianTrajectoryController::JacoCartesianTrajectoryController() : pnh("~"
   cartesianCmdPublisher = n.advertise<kinova_msgs::PoseVelocity>(side_+"_arm_driver/in/cartesian_velocity", 1);
 
   // Setup use time service
-  use_time_service_ = n.advertiseService("use_custom_time", &JacoTrajectoryController::useTimeService, this);
+  use_time_service_ = n.advertiseService("use_custom_time", &JacoCartesianTrajectoryController::useTimeService, this);
 
   // Start the trajectory server
   smoothTrajectoryServer.start();
-
 }
 
 
@@ -36,49 +35,6 @@ bool JacoCartesianTrajectoryController::useTimeService(std_srvs::SetBool::Reques
     ROS_INFO("Toggling use time");
     use_time_flag_ = req.data;
     return true;
-}
- 
-
-/** Adjust angle to equivalent angle on [-pi, pi]
- *  @param angle the angle to be simplified (-inf, inf)
- *  @return the simplified angle on [-pi, pi]
- */
-static inline double simplify_angle(double angle)
-{
-  double previous_rev = floor(angle / (2.0 * M_PI)) * 2.0 * M_PI;
-  double next_rev = ceil(angle / (2.0 * M_PI)) * 2.0 * M_PI;
-  double current_rev;
-  if (fabs(angle - previous_rev) < fabs(angle - next_rev))
-    return angle - previous_rev;
-  return angle - next_rev;
-}
-
-
-/** Calculates nearest desired angle to the current angle
- *  @param desired desired joint angle [-pi, pi]
- *  @param current current angle (-inf, inf)
- *  @return the closest equivalent angle (-inf, inf)
- */
-static inline double nearest_equivalent(double desired, double current)
-{
-  //calculate current number of revolutions
-  double previous_rev = floor(current / (2 * M_PI));
-  double next_rev = ceil(current / (2 * M_PI));
-  double current_rev;
-  if (fabs(current - previous_rev * 2 * M_PI) < fabs(current - next_rev * 2 * M_PI))
-    current_rev = previous_rev;
-  else
-    current_rev = next_rev;
-
-  //determine closest angle
-  double lowVal = (current_rev - 1) * 2 * M_PI + desired;
-  double medVal = current_rev * 2 * M_PI + desired;
-  double highVal = (current_rev + 1) * 2 * M_PI + desired;
-  if (fabs(current - lowVal) <= fabs(current - medVal) && fabs(current - lowVal) <= fabs(current - highVal))
-    return lowVal;
-  if (fabs(current - medVal) <= fabs(current - lowVal) && fabs(current - medVal) <= fabs(current - highVal))
-    return medVal;
-  return highVal;
 }
 
 
@@ -126,9 +82,7 @@ void JacoCartesianTrajectoryController::executeSmoothTrajectory(const control_ms
   if (use_time_flag_)
   {
     for (unsigned int i = 1; i < numPoints; i++)
-    {
       timePoints[i] = goal->trajectory.points.at(i).time_from_start.toSec();
-    }
   }
   else
   {
@@ -160,12 +114,11 @@ void JacoCartesianTrajectoryController::executeSmoothTrajectory(const control_ms
 
   // Catch error in max bound error
   try{
-   for (unsigned int i = 0; i < NUM_DOFS; i++)
+    for (unsigned int i = 0; i < NUM_DOFS; i++)
     {
-    ecl::SmoothLinearSpline tempSpline(timePoints, cartPoints[i], maxCurvature);
-    splines.at(i) = tempSpline;
+      ecl::SmoothLinearSpline tempSpline(timePoints, cartPoints[i], maxCurvature);
+      splines.at(i) = tempSpline;
     }
-
   } 
   catch ( std::exception &exc ){ 
       std::cerr << exc.what();
@@ -184,10 +137,15 @@ void JacoCartesianTrajectoryController::executeSmoothTrajectory(const control_ms
   double startTime = ros::Time::now().toSec();
   double t = 0;
   float error[NUM_DOFS];
-  float totalError;
+  float totalLinearError;
+  float totalAngularError;
   float prevError[NUM_DOFS] = {0};
   float currentPoint;
+  tf::StampedTransform ee_transform;
   double current_cart_pos[NUM_DOFS];
+  double roll;
+  double pitch;
+  double yaw;
   kinova_msgs::PoseVelocity trajectoryPoint;
   ros::Rate rate(100);
   bool reachedFinalPoint;
@@ -196,6 +154,22 @@ void JacoCartesianTrajectoryController::executeSmoothTrajectory(const control_ms
   // Sending to the real robot
   while (!trajectoryComplete)
   {
+    try{
+      tf_listener.lookupTransform("/linear_actuator_link", side_ +"_ee_base", ros::Time(0), ee_transform);
+    }
+    catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+      ros::Duration(1.0).sleep();
+    }
+
+    ee_transform.getBasis().getRPY(roll, pitch, yaw);
+    current_cart_pos[0] = ee_transform.getOrigin().x();
+    current_cart_pos[1] = ee_transform.getOrigin().y();
+    current_cart_pos[2] = ee_transform.getOrigin().z();
+    current_cart_pos[3] = roll;
+    current_cart_pos[4] = pitch;
+    current_cart_pos[5] = yaw;
+
     //check for preempt requests from clients
     if (smoothTrajectoryServer.isPreemptRequested())
     {
@@ -228,35 +202,29 @@ void JacoCartesianTrajectoryController::executeSmoothTrajectory(const control_ms
         finalPointTime = ros::Time::now();
       }
 
-      // for (unsigned int i = 0; i < NUM_DOFS; i++)
-      // {
-      //   current_joint_pos[i] = jointStates.position[i];
-      // }
-      tf::StampedTransform transform;
-      listener.lookupTransform("/linear_actuator_link", side_ +"_ee_link", ros::Time(0), transform);
-
-      totalError = 0;
+      totalLinearError = 0;
+      totalAngularError = 0;
       for (unsigned int i = 0; i < NUM_DOFS; i++)
       {
-        currentPoint = simplify_angle(current_joint_pos[i]);
-        error[i] = nearest_equivalent(simplify_angle((splines.at(i))(timePoints.at(timePoints.size() - 1))),
-                                      currentPoint) - currentPoint;
-        totalError += fabs(error[i]);
+        error[i] = splines.at(i)(timePoints.at(timePoints.size() - 1)) - current_cart_pos[i];
+
+        if (i < 3) 
+          totalLinearError += fabs(error[i]);
+        else 
+          totalAngularError += fabs(error[i]);
       }
 
-
-      if (totalError < .035 || ros::Time::now() - finalPointTime >= ros::Duration(3.0))
+      if ((totalLinearError < 0.01 && totalAngularError < .015) || ros::Time::now() - finalPointTime >= ros::Duration(3.0))
 
       {
         //stop arm
-        trajectoryPoint.joint1 = 0.0;
-        trajectoryPoint.joint2 = 0.0;
-        trajectoryPoint.joint3 = 0.0;
-        trajectoryPoint.joint4 = 0.0;
-        trajectoryPoint.joint5 = 0.0;
-        trajectoryPoint.joint6 = 0.0;
-        trajectoryPoint.joint7 = 0.0;
-        angularCmdPublisher.publish(trajectoryPoint);
+        trajectoryPoint.twist_linear_x = 0.0;
+        trajectoryPoint.twist_linear_y = 0.0;
+        trajectoryPoint.twist_linear_z = 0.0;
+        trajectoryPoint.twist_angular_x = 0.0;
+        trajectoryPoint.twist_angular_y = 0.0;
+        trajectoryPoint.twist_angular_z = 0.0;
+        cartesianCmdPublisher.publish(trajectoryPoint);
         trajectoryComplete = true;
         ROS_INFO("Trajectory complete!");
         break;
@@ -264,45 +232,24 @@ void JacoCartesianTrajectoryController::executeSmoothTrajectory(const control_ms
     }
     else
     {
-      //calculate error
-      /*
-      {
-        boost::recursive_mutex::scoped_lock lock(api_mutex);
-        GetAngularPosition(position_data);
-      }
-      */
       for (unsigned int i = 0; i < NUM_DOFS; i++)
-      {
-        current_joint_pos[i] = jointStates.position[i];
-      }
-
-      for (unsigned int i = 0; i < NUM_DOFS; i++)
-      {
-        currentPoint = simplify_angle(current_joint_pos[i]);
-        error[i] = nearest_equivalent(simplify_angle((splines.at(i))(t)), currentPoint) - currentPoint;
-      }
+        error[i] = splines.at(i)(timePoints.at(timePoints.size() - 1)) - current_cart_pos[i];
     }
 
     //calculate control input
     //populate the velocity command
-    trajectoryPoint.joint1 = (KP * error[0] + KV * (error[0] - prevError[0]) * RAD_TO_DEG);
-    trajectoryPoint.joint2 = (KP * error[1] + KV * (error[1] - prevError[1]) * RAD_TO_DEG);
-    trajectoryPoint.joint3 = (KP * error[2] + KV * (error[2] - prevError[2]) * RAD_TO_DEG);
-    trajectoryPoint.joint4 = (KP * error[3] + KV * (error[3] - prevError[3]) * RAD_TO_DEG);
-    trajectoryPoint.joint5 = (KP * error[4] + KV * (error[4] - prevError[4]) * RAD_TO_DEG);
-    trajectoryPoint.joint6 = (KP * error[5] + KV * (error[5] - prevError[5]) * RAD_TO_DEG);
-    trajectoryPoint.joint7 = (KP * error[6] + KV * (error[6] - prevError[6]) * RAD_TO_DEG);
-
-    //for debugging:
-    // cout << "Errors: " << error[0] << ", " << error[1] << ", " << error[2] << ", " << error[3] << ", " << error[4] << ", " << error[5] << endl;
+    trajectoryPoint.twist_linear_x = KP * error[0] + KV * (error[0] - prevError[0]);
+    trajectoryPoint.twist_linear_y = KP * error[1] + KV * (error[1] - prevError[1]);
+    trajectoryPoint.twist_linear_z = KP * error[2] + KV * (error[2] - prevError[2]);
+    trajectoryPoint.twist_angular_x = (KP * error[3] + KV * (error[3] - prevError[3]) * RAD_TO_DEG);
+    trajectoryPoint.twist_angular_y = (KP * error[4] + KV * (error[4] - prevError[4]) * RAD_TO_DEG);
+    trajectoryPoint.twist_angular_z = (KP * error[5] + KV * (error[5] - prevError[5]) * RAD_TO_DEG);
 
     //send the velocity command
-    angularCmdPublisher.publish(trajectoryPoint);
+    cartesianCmdPublisher.publish(trajectoryPoint);
 
     for (unsigned int i = 0; i < NUM_DOFS; i++)
-    {
       prevError[i] = error[i];
-    }
 
     rate.sleep();
     ros::spinOnce();

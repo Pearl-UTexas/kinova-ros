@@ -33,8 +33,6 @@ public:
   bool useTimeService(std_srvs::SetBool::Request &req,
                         std_srvs::SetBool::Response &res);
 
-  void jointStateCallback(const sensor_msgs::JointState &msg);
-
   void executeSmoothTrajectory(const control_msgs::FollowJointTrajectoryGoalConstPtr &goal);
 
 private:

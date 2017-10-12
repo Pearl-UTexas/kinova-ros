@@ -67,8 +67,10 @@ add_library(kinova_driver
   src/kinova_ros_types.cpp
   src/kinova_joint_trajectory_controller.cpp
   #src/hlpr_trajectory_controller.cpp
-  src/hlpr_trajectory_controller_two_arms.cpp
+  #src/hlpr_trajectory_controller_two_arms.cpp
+	src/hlpr_cartesian_trajectory_controller_two_arms.cpp
   include/kinova_driver/kinova_joint_trajectory_controller.h
+	include/kinova_driver/hlpr_cartesian_trajectory_controller_two_arms.h
   include/kinova_driver/jaco_trajectory_controller.h
   include/kinova_driver/kinova_joint_angles_action.h
   include/kinova_driver/kinova_api.h
@@ -112,6 +114,15 @@ target_link_libraries(hlpr_trajectory_controller_two_arms
 install(TARGETS hlpr_trajectory_controller_two_arms 
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 add_dependencies(hlpr_trajectory_controller_two_arms ${catkin_EXPORTED_TARGETS})
+
+add_executable(hlpr_cartesian_trajectory_controller_two_arms
+  src/hlpr_cartesian_trajectory_controller_two_arms.cpp
+  include/kinova_driver/hlpr_cartesian_trajectory_controller_two_arms.h)
+target_link_libraries(hlpr_cartesian_trajectory_controller_two_arms 
+  ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${kinova_driver_LIBRARIES} ${Eigen_LIBRARIES})
+install(TARGETS hlpr_cartesian_trajectory_controller_two_arms 
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+add_dependencies(hlpr_cartesian_trajectory_controller_two_arms ${catkin_EXPORTED_TARGETS})
 
 add_executable(gripper_command_action_server 
   src/joint_trajectory_action/gripper_command_action_server.cpp 
