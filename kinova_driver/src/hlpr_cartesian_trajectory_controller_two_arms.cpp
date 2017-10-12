@@ -37,6 +37,49 @@ bool JacoCartesianTrajectoryController::useTimeService(std_srvs::SetBool::Reques
     return true;
 }
 
+/** Adjust angle to equivalent angle on [-pi, pi]
+ *  @param angle the angle to be simplified (-inf, inf)
+ *  @return the simplified angle on [-pi, pi]
+ */
+static inline double simplify_angle(double angle)
+{
+  double previous_rev = floor(angle / (2.0 * M_PI)) * 2.0 * M_PI;
+  double next_rev = ceil(angle / (2.0 * M_PI)) * 2.0 * M_PI;
+  double current_rev;
+  if (fabs(angle - previous_rev) < fabs(angle - next_rev))
+    return angle - previous_rev;
+  return angle - next_rev;
+}
+
+
+
+/** Calculates nearest desired angle to the current angle
+ *  @param desired desired joint angle [-pi, pi]
+ *  @param current current angle (-inf, inf)
+ *  @return the closest equivalent angle (-inf, inf)
+ */
+static inline double nearest_equivalent_angle(double desired, double current)
+{
+  //calculate current number of revolutions
+  double previous_rev = floor(current / (2 * M_PI));
+  double next_rev = ceil(current / (2 * M_PI));
+  double current_rev;
+  if (fabs(current - previous_rev * 2 * M_PI) < fabs(current - next_rev * 2 * M_PI))
+    current_rev = previous_rev;
+  else
+    current_rev = next_rev;
+
+  //determine closest angle
+  double lowVal = (current_rev - 1) * 2 * M_PI + desired;
+  double medVal = current_rev * 2 * M_PI + desired;
+  double highVal = (current_rev + 1) * 2 * M_PI + desired;
+  if (fabs(current - lowVal) <= fabs(current - medVal) && fabs(current - lowVal) <= fabs(current - highVal))
+    return lowVal;
+  if (fabs(current - medVal) <= fabs(current - lowVal) && fabs(current - medVal) <= fabs(current - highVal))
+    return medVal;
+  return highVal;
+}
+
 
 /* execute Smooth Cartesian Controller
 // get trajectory data
@@ -166,9 +209,9 @@ void JacoCartesianTrajectoryController::executeSmoothTrajectory(const control_ms
     current_cart_pos[0] = ee_transform.getOrigin().x();
     current_cart_pos[1] = ee_transform.getOrigin().y();
     current_cart_pos[2] = ee_transform.getOrigin().z();
-    current_cart_pos[3] = roll;
-    current_cart_pos[4] = pitch;
-    current_cart_pos[5] = yaw;
+    current_cart_pos[3] = simplify_angle(roll);
+    current_cart_pos[4] = simplify_angle(pitch);
+    current_cart_pos[5] = simplify_angle(yaw);
 
     //check for preempt requests from clients
     if (smoothTrajectoryServer.isPreemptRequested())
@@ -233,17 +276,24 @@ void JacoCartesianTrajectoryController::executeSmoothTrajectory(const control_ms
     else
     {
       for (unsigned int i = 0; i < NUM_DOFS; i++)
-        error[i] = splines.at(i)(timePoints.at(timePoints.size() - 1)) - current_cart_pos[i];
+      {
+        /* Linear Values*/
+        if (i<=2)
+          error[i] = splines.at(i)(t) - current_cart_pos[i];
+
+        /* Angular Values*/
+        else error[i] = nearest_equivalent_angle(simplify_angle((splines.at(i))(timePoints.at(t))), current_cart_pos[i]) - current_cart_pos[i];
+      }
     }
 
     //calculate control input
     //populate the velocity command
-    trajectoryPoint.twist_linear_x = KP * error[0] + KV * (error[0] - prevError[0]);
-    trajectoryPoint.twist_linear_y = KP * error[1] + KV * (error[1] - prevError[1]);
-    trajectoryPoint.twist_linear_z = KP * error[2] + KV * (error[2] - prevError[2]);
-    trajectoryPoint.twist_angular_x = (KP * error[3] + KV * (error[3] - prevError[3]) * RAD_TO_DEG);
-    trajectoryPoint.twist_angular_y = (KP * error[4] + KV * (error[4] - prevError[4]) * RAD_TO_DEG);
-    trajectoryPoint.twist_angular_z = (KP * error[5] + KV * (error[5] - prevError[5]) * RAD_TO_DEG);
+    trajectoryPoint.twist_linear_x = KP_LINEAR * error[0] + KV_LINEAR * (error[0] - prevError[0]);
+    trajectoryPoint.twist_linear_y = KP_LINEAR * error[1] + KV_LINEAR * (error[1] - prevError[1]);
+    trajectoryPoint.twist_linear_z = KP_LINEAR * error[2] + KV_LINEAR * (error[2] - prevError[2]);
+    trajectoryPoint.twist_angular_x = (KP_ANGULAR * error[3] + KV_ANGULAR * (error[3] - prevError[3]) * RAD_TO_DEG);
+    trajectoryPoint.twist_angular_y = (KP_ANGULAR * error[4] + KV_ANGULAR * (error[4] - prevError[4]) * RAD_TO_DEG);
+    trajectoryPoint.twist_angular_z = (KP_ANGULAR * error[5] + KV_ANGULAR * (error[5] - prevError[5]) * RAD_TO_DEG);
 
     //send the velocity command
     cartesianCmdPublisher.publish(trajectoryPoint);

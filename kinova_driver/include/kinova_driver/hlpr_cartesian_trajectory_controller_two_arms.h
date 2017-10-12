@@ -21,8 +21,10 @@
 #define RAD_TO_DEG (180/M_PI)
 
 //gains for trajectory follower
-#define KP 225.0
-#define KV 10.0
+#define KP_LINEAR 225.0
+#define KV_LINEAR 10.0
+#define KP_ANGULAR 225.0
+#define KV_ANGULAR 10.0
 #define ERROR_THRESHOLD .03 //threshold in radians for combined joint error to consider motion a success
 
 class JacoCartesianTrajectoryController
