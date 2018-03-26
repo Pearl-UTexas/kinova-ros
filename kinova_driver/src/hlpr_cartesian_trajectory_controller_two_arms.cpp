@@ -3,7 +3,7 @@
 using namespace std;
 
 // Initialization
-JacoCartesianTrajectoryController::JacoCartesianTrajectoryController() : pnh("~"), smoothTrajectoryServer(pnh, "cart_trajectory", boost::bind(&JacoCartesianTrajectoryController::executeSmoothTrajectory, this, _1), false)
+JacoCartesianTrajectoryController::JacoCartesianTrajectoryController() : pnh("~"), smoothTrajectoryServer(pnh, "trajectory", boost::bind(&JacoCartesianTrajectoryController::executeSmoothTrajectory, this, _1), false)
 {
   pnh.param("max_curvature", maxCurvature, 200.0);
   pnh.param<string>("side", side_, "right");

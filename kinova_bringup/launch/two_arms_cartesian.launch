@@ -30,7 +30,7 @@
     </node>
     
     <!-- Start the trajectory server driver: Right Arm -->
-    <node pkg="kinova_driver" type="hlpr_cartesian_trajectory_controller_two_arms" name="right_arm_jaco_cartesian8_trajectory_controller" output="screen">
+    <node pkg="kinova_driver" type="hlpr_cartesian_trajectory_controller_two_arms" name="right_arm_jaco_cartesian_trajectory_controller" output="screen">
 				<param name="side" value="right" />
     </node>
         

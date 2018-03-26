@@ -259,6 +259,18 @@ void JacoTrajectoryController::executeSmoothTrajectory(const control_msgs::Follo
 		}
 	}
 
+	cout << "Traj Points\n";
+	for (int i = 0; i < numPoints; i++)
+	{
+		cout << "--------------------\n";
+		cout << "index: " << i << "\n";
+		cout << "point: ";
+		for (int j = 0; j < NUM_JACO_JOINTS; j++)
+			cout << trajectoryPoints[j][i] << " ";
+	    cout << "\n";
+		cout << "time: " << timePoints[i] << "\n";
+	}
+
   vector<ecl::SmoothLinearSpline> splines;
   splines.resize(NUM_JACO_JOINTS);
 

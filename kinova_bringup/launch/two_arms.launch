@@ -2,7 +2,7 @@
 <launch>
 
     <!-- Gazebo vs. Real Robot Arm -->
-    <arg name="sim" default="true" />
+    <arg name="sim" default="false" />
 
     <!-- Two Arms -->
     <arg name="side" default="right" />

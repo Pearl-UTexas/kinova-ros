@@ -10,7 +10,8 @@
   <!--rosparam file="$(find kinova_bringup)/launch/config/multiple_robots.yaml" command="load" /-->
 
   <node name="$(arg kinova_robotName)_driver" pkg="kinova_driver" type="kinova_arm_driver" output="screen" respawn="true" cwd="node" args="$(arg kinova_robotType)">
-    <rosparam file="$(find kinova_bringup)/launch/config/robot_parameters.yaml" command="load" />
+    <!--rosparam file="$(find kinova_bringup)/launch/config/robot_parameters.yaml" command="load" /-->
+    <rosparam file="$(find kinova_bringup)/launch/config/robot_parameters_$(arg kinova_robotName).yaml" command="load" />
     <param name="serial_number" value="$(arg kinova_robotSerial)" />   
     <param name="robot_name" value="$(arg kinova_robotName)" />   
     <param name="robot_type" value="$(arg kinova_robotType)" />   
