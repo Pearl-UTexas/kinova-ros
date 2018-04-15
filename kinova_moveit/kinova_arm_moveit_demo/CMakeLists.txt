@@ -27,6 +27,8 @@ find_package(Eigen REQUIRED)
 
 find_package(kinova_driver REQUIRED)
 
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+
 ###########
 ## Build ##
 ###########
