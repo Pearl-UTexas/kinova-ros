@@ -9,14 +9,15 @@
   <!-- If the node handles multiple robots uncomment this and configure /config/multiple_robots.yaml" -->
   <!--rosparam file="$(find kinova_bringup)/launch/config/multiple_robots.yaml" command="load" /-->
 
-  <node name="$(arg kinova_robotName)_driver" pkg="kinova_driver" type="kinova_arm_driver" output="screen" respawn="true" cwd="node" args="$(arg kinova_robotType)">
+  <node name="$(arg kinova_robotName)_arm_driver" pkg="kinova_driver" type="kinova_arm_driver" output="screen" respawn="true" cwd="node" args="$(arg kinova_robotType) $(arg kinova_robotName)">
     <!--rosparam file="$(find kinova_bringup)/launch/config/robot_parameters.yaml" command="load" /-->
     <rosparam file="$(find kinova_bringup)/launch/config/robot_parameters_$(arg kinova_robotName).yaml" command="load" />
     <param name="serial_number" value="$(arg kinova_robotSerial)" />   
     <param name="robot_name" value="$(arg kinova_robotName)" />   
-    <param name="robot_type" value="$(arg kinova_robotType)" />   
+    <param name="robot_type" value="$(arg kinova_robotType)" />
+    <remap from="/$(arg kinova_robotName)_arm_driver/out/joint_state" to="/vector/$(arg kinova_robotName)_arm/joint_states"/>
   </node>
-
+  
   <!--group if="$(arg use_urdf)">
 	<param name="robot_description" command="$(find xacro)/xacro.py '$(find vector_description)/urdf/vector_7dof.urdf.xacro'" />
     

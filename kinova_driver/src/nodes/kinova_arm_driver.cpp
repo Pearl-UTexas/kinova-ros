@@ -21,6 +21,8 @@ int main(int argc, char **argv)
 
     bool is_first_init = true;
     std::string kinova_robotType = "";
+    std::string kinova_robotName = "";
+
 
     // Retrieve the (non-option) argument:
     if ( (argc <= 1) || (argv[argc-1] == NULL) ) // there is NO input...
@@ -30,8 +32,11 @@ int main(int argc, char **argv)
     }
     else // there is an input...
     {
-        kinova_robotType = argv[argc-1];
+        kinova_robotType = argv[argc-2];
+        kinova_robotName = argv[argc-1];
         ROS_INFO("kinova_robotType is %s.", kinova_robotType.c_str());
+        ROS_INFO("kinova_robotName is %s.", kinova_robotName.c_str());
+
     }
 
 
@@ -40,7 +45,7 @@ int main(int argc, char **argv)
         try
         {
             kinova::KinovaComm comm(nh, api_mutex, is_first_init,kinova_robotType);
-            kinova::KinovaArm kinova_arm(comm, nh, kinova_robotType);
+            kinova::KinovaArm kinova_arm(comm, nh, kinova_robotType, kinova_robotName);
             kinova::KinovaPoseActionServer pose_server(comm, nh, kinova_robotType);
             kinova::KinovaAnglesActionServer angles_server(comm, nh);
             kinova::KinovaFingersActionServer fingers_server(comm, nh);

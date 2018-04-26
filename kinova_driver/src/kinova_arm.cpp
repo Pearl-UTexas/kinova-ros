@@ -46,8 +46,8 @@ namespace
 namespace kinova
 {
 
-KinovaArm::KinovaArm(KinovaComm &arm, const ros::NodeHandle &nodeHandle, const std::string &kinova_robotType)
-    : kinova_comm_(arm), node_handle_(nodeHandle), kinova_robotType_(kinova_robotType)
+KinovaArm::KinovaArm(KinovaComm &arm, const ros::NodeHandle &nodeHandle, const std::string &kinova_robotType, const std::string &kinova_robotName)
+    : kinova_comm_(arm), node_handle_(nodeHandle), kinova_robotType_(kinova_robotType), kinova_robotName_(kinova_robotName)
 {
     for (int i=0;i<COMMAND_SIZE;i++)
     {
@@ -94,7 +94,9 @@ KinovaArm::KinovaArm(KinovaComm &arm, const ros::NodeHandle &nodeHandle, const s
     }
 
 //    tf_prefix_ = kinova_robotType_ + "_" + boost::lexical_cast<string>(same_type_index); // in case of multiple same_type robots
-    tf_prefix_ = kinova_robotType_ + "_";
+    // tf_prefix_ = kinova_robotType_ + "_";
+    tf_prefix_ = kinova_robotName_ + "_";
+
 
     // Maximum number of joints on Kinova-like robots:
     robot_category_ = kinova_robotType_[0];
