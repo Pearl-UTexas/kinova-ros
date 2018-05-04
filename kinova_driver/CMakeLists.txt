@@ -159,6 +159,10 @@ add_executable(kinova_setOptimalArmParameters src/setOptimalParameters.cpp)
 add_dependencies(kinova_setOptimalArmParameters {$catkin_EXPORTED_TARGETS})
 target_link_libraries(kinova_setOptimalArmParameters ${catkin_LIBRARIES} kinova_driver)
 
+add_executable(kinova_RunGravityZEstimationSequence src/RunGravityZEstimationSequence )
+add_dependencies(kinova_RunGravityZEstimationSequence {$catkin_EXPORTED_TARGETS})
+target_link_libraries(kinova_RunGravityZEstimationSequence ${catkin_LIBRARIES} kinova_driver)
+
 #############
 ## Install ##
 #############
