@@ -12,6 +12,9 @@
     <arg name="comport" default="/dev/ttyUSB0"/>
     <arg name="baud" default="115200"/>
 
+    <!-- Load Arm Parameters -->
+    <node pkg="kinova_driver" type="kinova_setOptimalArmParameters" name="loadArmParameters" output="screen"/>
+
     <!-- Start the arm driver if we are not in simulation-->
     <!-- May need to change the launching order of the arms as the USB connection of arms might be in different order-->  
     <!-- left-->

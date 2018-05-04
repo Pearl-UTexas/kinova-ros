@@ -155,6 +155,10 @@ add_executable(kinova_interactive_control src/nodes/kinova_interactive_control.c
 add_dependencies(kinova_interactive_control ${catkin_EXPORTED_TARGETS})
 target_link_libraries(kinova_interactive_control ${catkin_LIBRARIES} kinova_driver)
 
+add_executable(kinova_setOptimalArmParameters src/setOptimalParameters.cpp)
+add_dependencies(kinova_setOptimalArmParameters {$catkin_EXPORTED_TARGETS})
+target_link_libraries(kinova_setOptimalArmParameters ${catkin_LIBRARIES} kinova_driver)
+
 #############
 ## Install ##
 #############
