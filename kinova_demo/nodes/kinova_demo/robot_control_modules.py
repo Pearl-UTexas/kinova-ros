@@ -163,8 +163,8 @@ def publishCatesianVelocityCommands(cartVel, duration_sec, prefix):
 	poseVelCmd.twist_linear_y = cartVel[1];
 	poseVelCmd.twist_linear_z = cartVel[2];
 	poseVelCmd.twist_angular_x = cartVel[3];
-	poseVelCmd.twist_angular_x = cartVel[4];
-	poseVelCmd.twist_angular_x = cartVel[5];
+	poseVelCmd.twist_angular_y = cartVel[4];
+	poseVelCmd.twist_angular_z = cartVel[5];
 	count = 0	
 	rate = rospy.Rate(100)
 	while (count < 100*duration_sec):
@@ -227,8 +227,7 @@ def publishForceCmd(force_cmds, duration_sec, prefix):
 def publishTorqueCmd(jointCmds, duration_sec, prefix):	
 
   #use service to set torque control parameters	
-  '''service_address = '/' + prefix + 'driver/in/set_torque_control_parameters'	
-  print "Watiting for service %s" % service_address
+  service_address = '/' + prefix + 'driver/in/set_torque_control_parameters'	
   rospy.wait_for_service(service_address)
   print "Service loaded"
   try:
@@ -236,9 +235,8 @@ def publishTorqueCmd(jointCmds, duration_sec, prefix):
 	  setTorqueParameters()           
 	  print "Finished setting torque paramters"
   except rospy.ServiceException, e:
-  	  print "Service call failed: %s"%e
-  	  return None	
-  '''
+	  print "Service call failed: %s"%e
+	  return None	
 
   #use service to switch to torque control	
   service_address = '/' + prefix + 'driver/in/set_torque_control_mode'	

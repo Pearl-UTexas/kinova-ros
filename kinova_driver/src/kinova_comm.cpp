@@ -783,7 +783,7 @@ void KinovaComm::getJointCurrent(AngularPosition &anguler_current)
 void KinovaComm::setZeroTorque()
 {
     boost::recursive_mutex::scoped_lock lock(api_mutex_);
-    int actuator_address[] = {16,17,18,19,20,21,22};
+    int actuator_address[] = {16,17,18,19,20,21,25};
     int result;
     for (int i=0;i<num_joints_;i++)
     {
@@ -901,7 +901,7 @@ void KinovaComm::setRobotCOMParam(GRAVITY_TYPE type,std::vector<float> params)
         result = kinova_api_.setGravityManualInputParam(com_parameters);
     else
         result = kinova_api_.setGravityOptimalZParam(com_parameters);
-    if (result != NO_ERROR_KINOVA)
+    if (result != NO_ERROR_KINOVA && result!=2005)
     {
         throw KinovaCommException("Could not set the COM parameters", result);
     }
@@ -947,7 +947,7 @@ int KinovaComm::runCOMParameterEstimation(ROBOT_TYPE type)
         throw KinovaCommException("Could not launch COM parameter estimation sequence", result);
     }
     result = kinova_api_.setGravityOptimalZParam(COMparams);
-    if (result != NO_ERROR_KINOVA)
+    if (result != NO_ERROR_KINOVA && result!=2005)
     {
         throw KinovaCommException("Could not set COM Parameters", result);
     }
@@ -1067,7 +1067,7 @@ void KinovaComm::getCartesianPosition(KinovaPose &position)
  * In KinovaPose, orientation is expressed in Euler-XYZ convention (Rot=Rx*Ry*Rz). However, in ROS by default using Euler-ZYX. tf::Matrix3x3 EulerYPR = Rz(tz)*Ry(ty)*Rx(tx)
  * @param pose target pose of robot [X,Y,Z, ThetaX, ThetaY, ThetaZ], unit in meter and radians.
  * @param timeout default 0.0, not used.
- * @param push default true, errase all trajectory before request motion..
+ * @param push default false, does not erase previous trajectory point before new motion. If you want to erase all trajectory before request motion, set to true..
  */
 void KinovaComm::setCartesianPosition(const KinovaPose &pose, int timeout, bool push)
 {
@@ -1378,48 +1378,68 @@ void KinovaComm::setFingerPositions(const FingerAngles &fingers, int timeout, bo
     }
 
     int result = NO_ERROR_KINOVA;
-    TrajectoryPoint kinova_angular;
-    kinova_angular.InitStruct();
-    memset(&kinova_angular, 0, sizeof(kinova_angular));  // zero structure
+    int control_type;
+    result=kinova_api_.getControlType(control_type); // are we currently in angular or Cartesian mode? Response	0 = Cartesian control type, 1 = Angular control type.
 
-    if (push)
-    {
-        result = kinova_api_.eraseAllTrajectories();
-        if (result != NO_ERROR_KINOVA)
-        {
-            throw KinovaCommException("Could not erase trajectories", result);
-        }
-    }
+    //initialize the trajectory point. same initialization for an angular or Cartesian point
+    TrajectoryPoint kinova_point;
+    kinova_point.InitStruct();
+    memset(&kinova_point, 0, sizeof(kinova_point));  // zero structure
 
-    //startAPI();
-
-    result = kinova_api_.setAngularControl();
     if (result != NO_ERROR_KINOVA)
     {
-        throw KinovaCommException("Could not set Cartesian control", result);
+        throw KinovaCommException("Could not get the current control type", result);
     }
-
-    // Initialize Cartesian control of the fingers
-    kinova_angular.Position.HandMode = POSITION_MODE;
-    kinova_angular.Position.Type = ANGULAR_POSITION;
-    kinova_angular.Position.Fingers = fingers;
-    kinova_angular.Position.Delay = 0.0;
-    kinova_angular.LimitationsActive = 0;
-
-    AngularPosition joint_angles;
-    memset(&joint_angles, 0, sizeof(joint_angles));  // zero structure
+    else
+    {
+	if (push)
+    	{
+        	result = kinova_api_.eraseAllTrajectories();
+        	if (result != NO_ERROR_KINOVA)
+        	{
+           		throw KinovaCommException("Could not erase trajectories", result);
+        	}
+    	}
+	// Initialize Cartesian control of the fingers
+	kinova_point.Position.HandMode = POSITION_MODE;
+	kinova_point.Position.Fingers = fingers;
+	kinova_point.Position.Delay = 0.0;
+	kinova_point.LimitationsActive = 0;
+	if(control_type==0) //Cartesian
+	{
+		kinova_point.Position.Type = CARTESIAN_POSITION;
+		CartesianPosition pose;
+                memset(&pose, 0, sizeof(pose));  // zero structure   
+		result = kinova_api_.getCartesianCommand(pose);
+    		if (result != NO_ERROR_KINOVA)
+    		{
+        		throw KinovaCommException("Could not get the Cartesian position", result);
+    		}    
+		kinova_point.Position.CartesianPosition=pose.Coordinates;
+	}
+        else if(control_type==1) //angular
+	{	
+		kinova_point.Position.Type = ANGULAR_POSITION;	
+		AngularPosition joint_angles;
+    		memset(&joint_angles, 0, sizeof(joint_angles));  // zero structure    
+		result = kinova_api_.getAngularCommand(joint_angles);
+    		if (result != NO_ERROR_KINOVA)
+    		{
+        		throw KinovaCommException("Could not get the angular position", result);
+    		}    
+		kinova_point.Position.Actuators = joint_angles.Actuators;
+	}
+	else
+	{ 
+		throw KinovaCommException("Wrong control type", result);
+	}  
+    }
+     
 
     // getAngularPosition will cause arm drop
     // result = kinova_api_.getAngularPosition(joint_angles);
-    result = kinova_api_.getAngularCommand(joint_angles);
-    if (result != NO_ERROR_KINOVA)
-    {
-        throw KinovaCommException("Could not get the angular position", result);
-    }
-
-    kinova_angular.Position.Actuators = joint_angles.Actuators;
-
-    result = kinova_api_.sendAdvanceTrajectory(kinova_angular);
+       
+    result = kinova_api_.sendBasicTrajectory(kinova_point);
     if (result != NO_ERROR_KINOVA)
     {
         throw KinovaCommException("Could not send advanced finger trajectory", result);
@@ -1463,8 +1483,9 @@ void KinovaComm::homeArm(void)
     startAPI();
 
     ROS_INFO("Homing the arm");
+    kinova_api_.moveHome();
 
-    JoystickCommand mycommand;
+    /*JoystickCommand mycommand;
     mycommand.InitStruct();
     // In api mapping(observing with Jacosoft), home button is ButtonValue[2].
     mycommand.ButtonValue[2] = 1;
@@ -1486,7 +1507,7 @@ void KinovaComm::homeArm(void)
 
     mycommand.ButtonValue[2] = 0;
     kinova_api_.sendJoystickCommand(mycommand);
-    ROS_WARN("Homing arm timer out! If the arm is not in home position yet, please re-run home arm.");
+    ROS_WARN("Homing arm timer out! If the arm is not in home position yet, please re-run home arm.");*/
 
 }
 

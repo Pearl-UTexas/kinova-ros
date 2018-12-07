@@ -117,7 +117,7 @@ class KinovaArm
     void publishJointAngles(void);
     void publishToolPosition(void);
     void publishToolWrench(void);
-    void publishFingerPosition(void);   
+    void publishFingerPosition(void);
 
     tf::TransformListener tf_listener_;
     ros::NodeHandle node_handle_;

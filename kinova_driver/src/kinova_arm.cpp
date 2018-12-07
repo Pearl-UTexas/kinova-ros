@@ -312,7 +312,7 @@ bool KinovaArm::setTorqueControlParametersService(kinova_msgs::SetTorqueControlP
         for (int i = 0; i<min_torque.size(); i++)
         {
             min_torque_actuator[i] = min_torque.at(i);
-            max_torque_actuator[i] = max_torque.at(i);            
+            max_torque_actuator[i] = max_torque.at(i);
         }
         kinova_comm_.setJointTorqueMinMax(min_torque_info,max_torque_info);
     }
@@ -654,10 +654,10 @@ void KinovaArm::publishJointAngles(void)
     KinovaAngles joint_tqs, gf_joint_tqs;
     bool gravity_comp;
     node_handle_.param("torque_parameters/publish_torque_with_gravity_compensation", gravity_comp, false);
-    //if (gravity_comp==true)
-    kinova_comm_.getGravityCompensatedTorques(gf_joint_tqs);
-    //else
-    kinova_comm_.getJointTorques(joint_tqs);
+    if (gravity_comp==true)
+      kinova_comm_.getGravityCompensatedTorques(joint_tqs);
+    else
+      kinova_comm_.getJointTorques(joint_tqs);
     joint_torque_publisher_.publish(joint_tqs.constructAnglesMsg());
     gf_joint_torque_publisher_.publish(gf_joint_tqs.constructAnglesMsg());
 

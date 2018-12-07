@@ -18,7 +18,7 @@
 <xacro:include filename="$(find kinova_description)/urdf/kinova_inertial.xacro" />
 
 
-    <property name="J_PI" value="3.1415926535897931" />
+    <xacro:property name="J_PI" value="3.1415926535897931" />
 
     <xacro:macro name="kinova_armlink" params="link_name link_mesh ring_mesh:=ring_big use_ring_mesh:=false mesh_no">
         <link name="${link_name}">
@@ -66,9 +66,10 @@
      <transmission name="${joint_name}_trans">
         <type>transmission_interface/SimpleTransmission</type>
         <joint name="${joint_name}">
-          <hardwareInterface>PositionJointInterface</hardwareInterface>
+          <hardwareInterface>EffortJointInterface</hardwareInterface>
         </joint>
         <actuator name="${joint_name}_actuator">
+          <hardwareInterface>EffortJointInterface</hardwareInterface>
         <mechanicalReduction>160</mechanicalReduction>
         </actuator>
      </transmission>
@@ -116,10 +117,10 @@
 		    <transmission name="${prefix}joint_finger_${finger_number}_trans">
 					<type>transmission_interface/SimpleTransmission</type>
 					<joint name="${prefix}joint_finger_${finger_number}">
-					  <hardwareInterface>PositionJointInterface</hardwareInterface>
+					  <hardwareInterface>EffortJointInterface</hardwareInterface>
 					</joint>
 					<actuator name="${prefix}joint_finger_${finger_number}_actuator">
-					<hardwareInterface>PositionJointInterface</hardwareInterface>
+					<hardwareInterface>EffortJointInterface</hardwareInterface>
 					<mechanicalReduction>1</mechanicalReduction>
 					</actuator>
 		    </transmission>
