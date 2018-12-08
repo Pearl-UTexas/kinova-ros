@@ -246,6 +246,7 @@ KinovaArm::KinovaArm(KinovaComm &arm, const ros::NodeHandle &nodeHandle, const s
                                            &KinovaArm::statusTimer, this);
 
     ROS_INFO("The arm is ready to use.");
+
 }
 
 
@@ -274,16 +275,13 @@ bool KinovaArm::setTorqueControlModeService(kinova_msgs::SetTorqueControlMode::R
     bool is_prentice;
     node_handle_.param("torque_parameters/is_prentice",
                               is_prentice,false);
-    if (is_prentice == true)
-        {
-                // Gravity vector in -Y
-                float GravityVector[3];
-                GravityVector[0] = 0;// -9.81; 
-                GravityVector[1] = -9.81;// 0;
-                GravityVector[2] = 0;// 0;
-                kinova_comm_.setGravityVector(GravityVector);
-        }
 
+    // Gravity vector in -Y
+    float GravityVector[3];
+    GravityVector[0] = 0;// -9.81; 
+    GravityVector[1] = -9.81;// 0;
+    GravityVector[2] = 0;// 0;
+    kinova_comm_.setGravityVector(GravityVector);
 }
 
 bool KinovaArm::setTorqueControlParametersService(kinova_msgs::SetTorqueControlParameters::Request &req, kinova_msgs::SetTorqueControlParameters::Response &res)

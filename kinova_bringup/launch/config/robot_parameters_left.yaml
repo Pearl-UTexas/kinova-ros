@@ -1,5 +1,5 @@
 # Set this parameter to use a specific arm on your system    --> 
-# serial_number: PJ00000001030703130
+#serial_number: PJ00900006152990001
 
 # Joint speed limit for joints 1, 2, 3
 jointSpeedLimitParameter1: 10

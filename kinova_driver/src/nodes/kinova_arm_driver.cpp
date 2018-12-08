@@ -31,9 +31,9 @@ int main(int argc, char **argv)
     }
     else // there is an input...
     {
-        //kinova_robotType = argv[argc-2];
-        // kinova_robotName = argv[argc-1];
-        kinova_robotType = argv[argc-1];
+        kinova_robotType = argv[argc-2];
+        kinova_robotName = argv[argc-1];
+        // kinova_robotType = argv[argc-1];
         ROS_INFO("kinova_robotType is %s.", kinova_robotType.c_str());
         if (!nh.getParam("robot_name", kinova_robotName))
         {
